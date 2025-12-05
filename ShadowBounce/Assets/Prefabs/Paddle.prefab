@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8396429773284046654}
   - component: {fileID: 1417316652475643249}
-  - component: {fileID: 3580118200258433412}
+  - component: {fileID: 8788470636766295350}
   - component: {fileID: 2719357526144337272}
   - component: {fileID: 7741011497586387113}
   m_Layer: 0
@@ -89,7 +89,7 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &3580118200258433412
+--- !u!114 &8788470636766295350
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -101,10 +101,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: edd6d017160c39e48aeeceef8d9b4c62, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _speed: 10
-  _useTouch: 1
-  _leftLimit: -8
-  _rightLimit: 8
+  _velocity: 25
 --- !u!61 &2719357526144337272
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -165,8 +162,8 @@ Rigidbody2D:
   m_UseAutoMass: 0
   m_Mass: 1
   m_LinearDrag: 0
-  m_AngularDrag: 0.05
-  m_GravityScale: 1
+  m_AngularDrag: 0
+  m_GravityScale: 0
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2

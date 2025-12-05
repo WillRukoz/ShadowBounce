@@ -1,141 +1,144 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class BallController : MonoBehaviour
 {
-    [Header("Configuración de Movimiento")]
-    [SerializeField] private float velocidadInicial = 8f;
-    [SerializeField] private float velocidadMaxima = 15f;
-    [SerializeField] private float incrementoVelocidad = 0.1f;
+    [Header("Movement Settings")]
+    [SerializeField] private float _initialSpeed = 8f;
+    [SerializeField] private float _maxSpeed = 35f;
+    [SerializeField] private float _speedRate = 0.1f;
     
-    [Header("Configuración Inicial")]
-    [SerializeField] private bool iniciarConPaleta = true;
-    [SerializeField] private Transform paleta;
-    [SerializeField] private Vector3 offsetPaleta = new Vector3(0, 0.5f, 0);
+    [Header("Initial Settings")]
+    [SerializeField] private bool _isBallOnPaddle = true;
+    [SerializeField] private Transform _paddle;
+    [SerializeField] private Vector3 _offsetPaddle = new Vector3(0, 0.5f, 0);
     
-    [Header("Límites y Rebotes")]
-    [SerializeField] private float limiteInferior = -10f;
+    [Header("Limits")]
+    [SerializeField] private float _lowerLimit = -10f;
     
-    private Rigidbody2D rb;
-    private bool juegoIniciado = false;
-    private Vector2 ultimaDireccion;
+    private Rigidbody2D _rb;
+    private bool _isBallLaunched = false;
+    private Vector2 _lastDir;
     
     void Start()
     {
-        rb = GetComponent<Rigidbody2D>();
+        _rb = GetComponent<Rigidbody2D>();
         
-        if (iniciarConPaleta && paleta != null)
+        if (_isBallOnPaddle && _paddle != null)
         {
-            rb.isKinematic = true;
+            _rb.isKinematic = true;
         }
         else
         {
-            LanzarPelota();
+            LaunchBall();
         }
     }
     
     void Update()
     {
         // Iniciar juego con toque o clic
-        if (!juegoIniciado && (Input.touchCount > 0 || Input.GetMouseButtonDown(0)))
+        if (!_isBallLaunched && Input.GetKeyDown(KeyCode.Space))
         {
-            LanzarPelota();
+            LaunchBall();
         }
         
         // Mantener pelota pegada a la paleta antes de lanzar
-        if (!juegoIniciado && paleta != null)
+        if (!_isBallLaunched && _paddle != null)
         {
-            transform.position = paleta.position + offsetPaleta;
+            transform.position = _paddle.position + _offsetPaddle;
         }
         
         // Verificar si la pelota cayó
-        if (transform.position.y < limiteInferior)
+        if (transform.position.y < _lowerLimit)
         {
-            PerderVida();
+            LoseLife();
         }
         
         // Mantener velocidad constante
-        if (juegoIniciado && rb.velocity.magnitude > 0)
+        if (_isBallLaunched && _rb.velocity.magnitude > 0)
         {
-            rb.velocity = rb.velocity.normalized * Mathf.Min(rb.velocity.magnitude, velocidadMaxima);
+            _rb.velocity = _rb.velocity.normalized * Mathf.Min(_rb.velocity.magnitude, _maxSpeed);
         }
     }
     
-    void LanzarPelota()
+    void LaunchBall()
     {
-        if (juegoIniciado) return;
+        if (_isBallLaunched) return;
         
-        juegoIniciado = true;
-        rb.isKinematic = false;
+        _isBallLaunched = true;
+        _rb.isKinematic = false;
         
         // Lanzar en dirección aleatoria hacia arriba
-        float anguloAleatorio = Random.Range(-45f, 45f);
-        Vector2 direccion = Quaternion.Euler(0, 0, anguloAleatorio) * Vector2.up;
-        rb.velocity = direccion * velocidadInicial;
+        float randomAngle = Random.Range(-45f, 45f);
+        Vector2 dir = Quaternion.Euler(0, 0, randomAngle) * Vector2.up;
+        _rb.velocity = dir * _initialSpeed;
         
-        ultimaDireccion = rb.velocity.normalized;
+        _lastDir = _rb.velocity.normalized;
     }
     
-    void OnCollisionEnter2D(Collision2D colision)
+    void OnCollisionEnter2D(Collision2D collision)
     {
         // Ajustar ángulo de rebote con la paleta
-        if (colision.gameObject.CompareTag("Player"))
+        if (collision.gameObject.CompareTag("Player") ||
+            collision.gameObject.CompareTag("Block") ||
+            collision.gameObject.CompareTag("Wall"))
         {
-            AjustarRebotePaleta(colision);
+            SetBounceAngle(collision);
         }
-        
-        // Incrementar velocidad ligeramente con cada rebote
-        if (rb.velocity.magnitude < velocidadMaxima)
+
+        //Incrementar velocidad ligeramente con cada rebote
+        if (_rb.velocity.magnitude < _maxSpeed)
         {
-            rb.velocity *= (1f + incrementoVelocidad);
+            _rb.velocity *= (_rb.velocity.magnitude + _speedRate);
         }
-        
+
         // Guardar última dirección válida
-        ultimaDireccion = rb.velocity.normalized;
+        _lastDir = _rb.velocity.normalized;
         
         // Evitar que la pelota se quede horizontal
-        CorregirAnguloHorizontal();
+        AdjustHorizontalAngle();
     }
     
-    void AjustarRebotePaleta(Collision2D colision)
+    void SetBounceAngle(Collision2D colision)
     {
         // Calcular posición relativa del impacto
-        float posicionRelativa = (transform.position.x - colision.transform.position.x) / 
+        float relativePos = (transform.position.x - colision.transform.position.x) /
                                  colision.collider.bounds.size.x;
-        
+
         // Ajustar ángulo basado en dónde golpeó (-1 izquierda, 0 centro, 1 derecha)
-        float anguloRebote = posicionRelativa * 60f; // Máximo 60 grados
-        
-        Vector2 direccion = Quaternion.Euler(0, 0, anguloRebote) * Vector2.up;
-        rb.velocity = direccion * rb.velocity.magnitude;
+        float hitAngle = relativePos * 60f; // Máximo 60 grados
+
+        Vector2 dir = Quaternion.Euler(0, 0, hitAngle) * Vector2.up;
+        _rb.velocity = dir * _rb.velocity.magnitude;
     }
     
-    void CorregirAnguloHorizontal()
+    void AdjustHorizontalAngle()
     {
         // Si la pelota está muy horizontal, ajustar ángulo
-        float anguloActual = Vector2.Angle(rb.velocity, Vector2.right);
+        float currentAngle = Vector2.Angle(_rb.velocity, Vector2.right);
         
-        if (anguloActual < 15f || anguloActual > 165f)
+        if (currentAngle < 15f || currentAngle > 165f)
         {
-            float signoY = Mathf.Sign(rb.velocity.y);
-            if (signoY == 0) signoY = 1;
+            float ySign = Mathf.Sign(_rb.velocity.y);
+            if (ySign == 0) ySign = 1;
             
-            Vector2 nuevaDireccion = new Vector2(rb.velocity.x, signoY * Mathf.Abs(rb.velocity.x) * 0.5f);
-            rb.velocity = nuevaDireccion.normalized * rb.velocity.magnitude;
+            Vector2 nuevaDireccion = new Vector2(_rb.velocity.x, ySign * Mathf.Abs(_rb.velocity.x) * 0.5f);
+            _rb.velocity = nuevaDireccion.normalized * _rb.velocity.magnitude;
         }
     }
     
-    void PerderVida()
+    void LoseLife()
     {
         Debug.Log("¡Perdiste una vida!");
         
         // Reiniciar posición
-        juegoIniciado = false;
-        rb.isKinematic = true;
-        rb.velocity = Vector2.zero;
+        _isBallLaunched = false;
+        _rb.isKinematic = true;
+        _rb.velocity = Vector2.zero;
         
-        if (paleta != null)
+        if (_paddle != null)
         {
-            transform.position = paleta.position + offsetPaleta;
+            transform.position = _paddle.position + _offsetPaddle;
         }
         
         // Aquí puedes agregar lógica de vidas
@@ -143,8 +146,8 @@ public class BallController : MonoBehaviour
     }
     
     // Método público para reiniciar
-    public void Reiniciar()
+    public void Reset()
     {
-        PerderVida();
+        LoseLife();
     }
 }

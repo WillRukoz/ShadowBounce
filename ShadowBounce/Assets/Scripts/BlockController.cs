@@ -8,7 +8,7 @@ public class BlockController : MonoBehaviour
     [SerializeField] private Color[] coloresPorGolpe; // Colores según golpes restantes
     
     [Header("Efectos Visuales")]
-    [SerializeField] private GameObject efectoDestruccion; // Prefab de partículas (opcional)
+    //[SerializeField] private GameObject efectoDestruccion; // Prefab de partículas (opcional)
     [SerializeField] private bool escalarAlGolpear = true;
     [SerializeField] private float duracionEscala = 0.1f;
     
@@ -73,10 +73,10 @@ public class BlockController : MonoBehaviour
         //ReproducirSonido(sonidoDestruccion);
         
         // Crear efecto de partículas
-        if (efectoDestruccion != null)
-        {
-            Instantiate(efectoDestruccion, transform.position, Quaternion.identity);
-        }
+        //if (efectoDestruccion != null)
+        //{
+        //    Instantiate(efectoDestruccion, transform.position, Quaternion.identity);
+        //}
         
         // Notificar al GameManager
         // GameManager.Instance.BloqueDestruido();
