@@ -4,8 +4,9 @@ using System.Collections.Generic;
 public class BallController : MonoBehaviour
 {
     [Header("Movement Settings")]
-    [SerializeField] private float _initialSpeed = 8f;
-    [SerializeField] private float _maxSpeed = 35f;
+    [SerializeField] private float _currentSpeed;
+    [SerializeField] private float _initialSpeed = 5f;
+    [SerializeField] private float _maxSpeed = 8f;
     [SerializeField] private float _speedRate = 0.1f;
     
     [Header("Initial Settings")]
@@ -17,12 +18,15 @@ public class BallController : MonoBehaviour
     [SerializeField] private float _lowerLimit = -10f;
     
     private Rigidbody2D _rb;
+    private float _radius;
     private bool _isBallLaunched = false;
-    private Vector2 _lastDir;
+    [SerializeField] private Vector2 _lastDir;
     
     void Start()
     {
         _rb = GetComponent<Rigidbody2D>();
+        _radius = GetComponent<CircleCollider2D>().radius;
+        _currentSpeed = _initialSpeed;
         
         if (_isBallOnPaddle && _paddle != null)
         {
@@ -78,19 +82,15 @@ public class BallController : MonoBehaviour
     
     void OnCollisionEnter2D(Collision2D collision)
     {
+        IncreaseSpeed();
+
         // Ajustar ángulo de rebote con la paleta
         if (collision.gameObject.CompareTag("Player") ||
             collision.gameObject.CompareTag("Block") ||
             collision.gameObject.CompareTag("Wall"))
         {
             SetBounceAngle(collision);
-        }
-
-        //Incrementar velocidad ligeramente con cada rebote
-        if (_rb.velocity.magnitude < _maxSpeed)
-        {
-            _rb.velocity *= (_rb.velocity.magnitude + _speedRate);
-        }
+        }        
 
         // Guardar última dirección válida
         _lastDir = _rb.velocity.normalized;
@@ -99,17 +99,32 @@ public class BallController : MonoBehaviour
         AdjustHorizontalAngle();
     }
     
+    void IncreaseSpeed()
+    {
+        _currentSpeed = Mathf.Clamp(_currentSpeed + _speedRate, _initialSpeed, _maxSpeed);
+    }
+
     void SetBounceAngle(Collision2D colision)
     {
-        // Calcular posición relativa del impacto
-        float relativePos = (transform.position.x - colision.transform.position.x) /
-                                 colision.collider.bounds.size.x;
 
-        // Ajustar ángulo basado en dónde golpeó (-1 izquierda, 0 centro, 1 derecha)
-        float hitAngle = relativePos * 60f; // Máximo 60 grados
+        Bounds bounds = colision.collider.bounds;
 
-        Vector2 dir = Quaternion.Euler(0, 0, hitAngle) * Vector2.up;
-        _rb.velocity = dir * _rb.velocity.magnitude;
+        Vector3 ballPosition = transform.position;
+
+        // Calcular la distancia de la pelota al centro del BoxCollider
+        Vector3 localPosition = ballPosition - bounds.center;
+
+        // Determinar si es una tapa o una pared
+        if (Mathf.Abs(localPosition.y) + _radius >= bounds.extents.y)
+        {
+            _lastDir = new Vector3(_lastDir.x, -_lastDir.y);
+        }
+        else if (Mathf.Abs(localPosition.x) + _radius >= bounds.extents.x)
+        {
+            _lastDir = new Vector3(-_lastDir.x, _lastDir.y);
+        }
+
+        _rb.velocity = _lastDir * _currentSpeed;
     }
     
     void AdjustHorizontalAngle()
@@ -122,8 +137,8 @@ public class BallController : MonoBehaviour
             float ySign = Mathf.Sign(_rb.velocity.y);
             if (ySign == 0) ySign = 1;
             
-            Vector2 nuevaDireccion = new Vector2(_rb.velocity.x, ySign * Mathf.Abs(_rb.velocity.x) * 0.5f);
-            _rb.velocity = nuevaDireccion.normalized * _rb.velocity.magnitude;
+            Vector2 newDir = new Vector2(_rb.velocity.x, ySign * Mathf.Abs(_rb.velocity.x) * 0.5f);
+            _rb.velocity = newDir.normalized * _rb.velocity.magnitude;
         }
     }
     

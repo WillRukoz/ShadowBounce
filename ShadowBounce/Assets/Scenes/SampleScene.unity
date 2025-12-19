@@ -1376,6 +1376,14 @@ PrefabInstance:
       propertyPath: _paddle
       value: 
       objectReference: {fileID: 2091379801}
+    - target: {fileID: 3796724983493198457, guid: f260f06c755bd8948a3d7f9584203f09, type: 3}
+      propertyPath: _maxSpeed
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3796724983493198457, guid: f260f06c755bd8948a3d7f9584203f09, type: 3}
+      propertyPath: _initialSpeed
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 4647600883371866794, guid: f260f06c755bd8948a3d7f9584203f09, type: 3}
       propertyPath: m_PreviewTimeScale
       value: 1
